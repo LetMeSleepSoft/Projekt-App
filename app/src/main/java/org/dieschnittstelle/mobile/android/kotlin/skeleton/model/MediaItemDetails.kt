@@ -1,21 +1,18 @@
 package org.dieschnittstelle.mobile.android.kotlin.skeleton.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import java.lang.System.currentTimeMillis
 
-@Entity(tableName = "mediaItems")
-data class MediaItem(
-    @PrimaryKey(autoGenerate = true) val id: Long,
-    val title: String,
-    val src: ByteArray?,
-    val createDate: Long = currentTimeMillis(),
+data class MediaItemDetails(
+    val id: Long = 0,
+    val title: String = "",
+    val src: ByteArray? = null,
+    val createDate: Long = currentTimeMillis()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as MediaItem
+        other as MediaItemDetails
 
         if (id != other.id) return false
         if (createDate != other.createDate) return false
@@ -29,16 +26,14 @@ data class MediaItem(
         var result = id.hashCode()
         result = 31 * result + createDate.hashCode()
         result = 31 * result + title.hashCode()
-        result = 31 * result + src.contentHashCode()
+        result = 31 * result + (src?.contentHashCode() ?: 0)
         return result
     }
 }
 
-fun MediaItem.toMediaItemDetails(): MediaItemDetails = MediaItemDetails(
+fun MediaItemDetails.toMediaItem(): MediaItem = MediaItem(
     id = id,
     title = title,
     src = src,
     createDate = createDate
 )
-
-

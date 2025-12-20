@@ -3,7 +3,7 @@ package org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item
 import kotlinx.coroutines.flow.Flow
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
 
-class OfflineMediaItemRepositoryImpl(
+class MediaItemRepositoryImpl(
     val localMediaItemDAO: MediaItemDao
 ) : MediaItemRepository {
 
