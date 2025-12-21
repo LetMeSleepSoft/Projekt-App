@@ -5,7 +5,7 @@ import java.lang.System.currentTimeMillis
 data class MediaItemDetails(
     val id: Long = 0,
     val title: String = "",
-    val src: ByteArray? = null,
+    val src: ByteArray? = byteArrayOf(),
     val createDate: Long = currentTimeMillis()
 ) {
     override fun equals(other: Any?): Boolean {
@@ -26,7 +26,7 @@ data class MediaItemDetails(
         var result = id.hashCode()
         result = 31 * result + createDate.hashCode()
         result = 31 * result + title.hashCode()
-        result = 31 * result + (src?.contentHashCode() ?: 0)
+        result = 31 * result + src.contentHashCode()
         return result
     }
 }

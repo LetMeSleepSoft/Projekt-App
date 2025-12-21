@@ -22,15 +22,25 @@ import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetail
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItem
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
+import androidx.core.graphics.scale
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItemDetails
 
 @HiltViewModel
 class MediaItemViewModel @Inject constructor(
     private val mediaItemRepository: MediaItemRepository
 ) : ViewModel() {
 
-    var bottomSheetUiState by mutableStateOf(BottomSheetUiState())
+    var alertDialogUiState by mutableStateOf(AlertDialogUiState())
         private set
 
+    var minimalDialogUiState by mutableStateOf(MinimalDialogUiState())
+        private set
+
+    var deleteDialogUiState by mutableStateOf(DeleteDialogUiState())
+        private set
+
+    var bottomSheetUiState by mutableStateOf(BottomSheetUiState())
+        private set
 
     val mediaItemListUiState: StateFlow<MediaItemListUiState> =
         mediaItemRepository.getAllMediaItemsStream().map { MediaItemListUiState(it) }
@@ -44,11 +54,22 @@ class MediaItemViewModel @Inject constructor(
     fun saveMediaItem() {
         viewModelScope.launch {
             if (validateInput()) {
-                Log.i("SAVE CLICKED","ITEM: ${bottomSheetUiState.mediaItemDetails.src}")
-                val mediaItem = bottomSheetUiState.mediaItemDetails.toMediaItem()
+                val mediaItem = checkTitle(bottomSheetUiState.mediaItemDetails).toMediaItem()
                 mediaItemRepository.insertMediaItem(mediaItem)
+            } else {
+                alertDialogUiState = AlertDialogUiState( isDialogVisible = true )
             }
         }
+    }
+
+    suspend fun deleteItem(mediaItem: MediaItem) {
+        Log.i("DELETE ITEM", "ITEM TO DELETE: ${mediaItem.title}")
+        mediaItemRepository.deleteItem(mediaItem)
+    }
+
+    suspend fun updateItem(mediaItem: MediaItem) {
+        Log.i("BILD FUNC","mediaitem: ${mediaItem.src}")
+        mediaItemRepository.updateMediaItem(mediaItem)
     }
 
     fun uriToByteArray(
@@ -65,8 +86,7 @@ class MediaItemViewModel @Inject constructor(
             val scale = if (bitmap.width > maxWidth) {
                 val ratio = bitmap.height.toFloat() / bitmap.width.toFloat()
                 val newHeight = (maxWidth * ratio).toInt()
-                Bitmap.createScaledBitmap(
-                    bitmap, maxWidth, newHeight, true)
+                bitmap.scale(maxWidth, newHeight)
             } else {
                 bitmap
             }
@@ -85,16 +105,68 @@ class MediaItemViewModel @Inject constructor(
         }
     }
 
+    fun changeAlertDialogUiState(dialogState: Boolean) {
+        alertDialogUiState =
+            AlertDialogUiState(isDialogVisible = !dialogState)
+    }
+
 
     fun changeBottomSheetUiState(sheetState: Boolean) {
         bottomSheetUiState =
             BottomSheetUiState(isBottomSheetVisible = !sheetState)
     }
 
+    fun changeMinimalDialogUiState(
+        dialogUiState: Boolean,
+        mediaItem: MediaItemDetails,
+    ) {
+        minimalDialogUiState =
+            MinimalDialogUiState(
+                mediaItem = mediaItem,
+                isMinimalDialogVisible = !dialogUiState
+            )
+    }
+
+    fun changeDeleteDialogUiState(
+        dialogUiState: Boolean,
+        mediaItem: MediaItemDetails,
+    ) {
+        deleteDialogUiState =
+            DeleteDialogUiState(
+                mediaItem = mediaItem,
+                isDeleteDialogVisible = !dialogUiState
+            )
+    }
+
+    fun transferMediaItemToBottomUiState(mediaItem: MediaItemDetails) {
+        bottomSheetUiState =
+            BottomSheetUiState(
+                mediaItemDetails = mediaItem,
+                isBottomSheetVisible = true,
+            )
+    }
+
     private fun validateInput(uiState: MediaItemDetails = bottomSheetUiState.mediaItemDetails): Boolean {
         return with(uiState) {
-            title.isNotBlank()
+            src?.isNotEmpty() ?: false
         }
+    }
+
+    private fun checkTitle(mediaItem: MediaItemDetails = bottomSheetUiState.mediaItemDetails): MediaItemDetails {
+        val item: MediaItemDetails = if (mediaItem.title.isBlank()) {
+            MediaItemDetails(
+                title = mediaItem.createDate.toString(),
+                src = mediaItem.src,
+                createDate = mediaItem.createDate
+            )
+        } else {
+            MediaItemDetails(
+                title = mediaItem.title,
+                src = mediaItem.src,
+                createDate = mediaItem.createDate
+            )
+        }
+       return item
     }
 
     fun updateBottomSheetUiState(mediaItem: MediaItemDetails) {
@@ -114,4 +186,18 @@ data class BottomSheetUiState(
     val mediaItemDetails: MediaItemDetails = MediaItemDetails(),
     val isBottomSheetVisible: Boolean = false,
     val isEntryValid: Boolean = false,
+)
+
+data class AlertDialogUiState(
+    val isDialogVisible: Boolean = false,
+)
+
+data class MinimalDialogUiState(
+    val isMinimalDialogVisible: Boolean = false,
+    val mediaItem: MediaItemDetails = MediaItemDetails()
+)
+
+data class DeleteDialogUiState(
+    val isDeleteDialogVisible: Boolean = false,
+    val mediaItem: MediaItemDetails = MediaItemDetails()
 )
