@@ -63,12 +63,10 @@ class MediaItemViewModel @Inject constructor(
     }
 
     suspend fun deleteItem(mediaItem: MediaItem) {
-        Log.i("DELETE ITEM", "ITEM TO DELETE: ${mediaItem.title}")
         mediaItemRepository.deleteItem(mediaItem)
     }
 
     suspend fun updateItem(mediaItem: MediaItem) {
-        Log.i("BILD FUNC","mediaitem: ${mediaItem.src}")
         mediaItemRepository.updateMediaItem(mediaItem)
     }
 

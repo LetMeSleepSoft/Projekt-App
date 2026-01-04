@@ -5,12 +5,19 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import kotlinx.serialization.Serializable
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.detail.DetailScreen
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.ListScreen
 
 enum class AppRoutes() {
     List,
-
+    Detail,
 }
+
+@Serializable
+data class MediaDetailRoute(val mediaItemId: Long)
 
 @Composable
 fun AppNavHost(
@@ -23,7 +30,23 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable(route = AppRoutes.List.name) {
-            ListScreen()
+            ListScreen(
+                onNavigateToDetails = { mediaItemId ->
+                    navController.navigate(
+                        MediaDetailRoute(mediaItemId = mediaItemId)
+                    )
+                }
+            )
+        }
+
+        composable<MediaDetailRoute> { backStackEntry ->
+            val mediaItemRoute = backStackEntry.toRoute<MediaDetailRoute>()
+            DetailScreen(
+                onNavigateBack = {
+                    navController.navigate(AppRoutes.List.name)
+                },
+                mediaItemId = mediaItemRoute.mediaItemId
+            )
         }
     }
 }

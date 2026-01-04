@@ -68,7 +68,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -79,12 +78,12 @@ import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetails
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItem
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItemDetails
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.theme.MADDemoTheme
 
 
 @Composable
 fun ListScreen(
     modifier: Modifier = Modifier,
+    onNavigateToDetails: (Long) -> Unit,
     viewModel: MediaItemViewModel = hiltViewModel()
 ){
     val coroutineScope = rememberCoroutineScope()
@@ -94,9 +93,7 @@ fun ListScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-
-            )
+            TopAppBar()
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -143,7 +140,8 @@ fun ListScreen(
             minimalDialogUiState = viewModel.minimalDialogUiState,
             deleteDialogUiState = viewModel.deleteDialogUiState,
             onShowMinimalDialog = viewModel::changeMinimalDialogUiState,
-            onShowDeleteDialog = viewModel::changeDeleteDialogUiState
+            onShowDeleteDialog = viewModel::changeDeleteDialogUiState,
+            onNavigateToDetails = onNavigateToDetails
         )
     }
 }
@@ -165,6 +163,7 @@ fun ListScreenBody(
     onDismiss: (Boolean) -> Unit,
     onShowMinimalDialog: (Boolean, MediaItemDetails) -> Unit,
     onShowDeleteDialog: (Boolean, MediaItemDetails) -> Unit,
+    onNavigateToDetails: (Long) -> Unit,
     context: Context,
     modifier: Modifier = Modifier
 ) {
@@ -177,6 +176,7 @@ fun ListScreenBody(
                 mediaItem = item,
                 minimalDialogUiState = minimalDialogUiState,
                 onChangeMinimalDialogState = onShowMinimalDialog,
+                onNavigateToDetails = onNavigateToDetails
             )
         }
     }
@@ -234,6 +234,7 @@ fun ListItem(
     mediaItem: MediaItem,
     minimalDialogUiState: MinimalDialogUiState,
     onChangeMinimalDialogState: (Boolean, MediaItemDetails) -> Unit,
+    onNavigateToDetails: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box {
@@ -241,6 +242,9 @@ fun ListItem(
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent
             ),
+            onClick = {
+                onNavigateToDetails(mediaItem.id)
+            },
             modifier = modifier.padding(2.dp)
         ) {
             Row(
@@ -385,7 +389,10 @@ fun BottomModal(
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
-                        onDone = { onSave() }
+                        onDone = {
+                            onSheetItemValueChange(mediaItem.copy(src = imgResult))
+                            onSave()
+                        }
                     ),
                 )
                 IconButton(
@@ -768,16 +775,4 @@ fun TopAppBar(
             }
         }
     )
-}
-
-@Preview
-@Composable
-fun ListScreenPreview() {
-    MADDemoTheme {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            ListScreen(
-                Modifier.padding(innerPadding)
-            )
-        }
-    }
 }

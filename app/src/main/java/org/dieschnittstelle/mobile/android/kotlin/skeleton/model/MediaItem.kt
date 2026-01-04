@@ -2,6 +2,7 @@ package org.dieschnittstelle.mobile.android.kotlin.skeleton.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import java.lang.System.currentTimeMillis
 
 @Entity(tableName = "mediaItems")

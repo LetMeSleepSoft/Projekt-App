@@ -7,7 +7,7 @@ interface MediaItemRepository {
 
     fun getAllMediaItemsStream(): Flow<List<MediaItem>>
 
-    fun getMediaItemStream(id: Long): Flow<MediaItem?>
+    suspend fun getMediaItemStream(id: Long): Flow<MediaItem?>
 
     suspend fun insertMediaItem(mediaItem: MediaItem)
 
