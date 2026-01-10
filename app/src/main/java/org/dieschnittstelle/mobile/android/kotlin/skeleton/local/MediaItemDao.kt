@@ -1,4 +1,4 @@
-package org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item
+package org.dieschnittstelle.mobile.android.kotlin.skeleton.local
 
 import androidx.room.Dao
 import androidx.room.Delete

@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 // build file created by Android Studio with additional dependencies for MAD Demo
 plugins {
     alias(libs.plugins.android.application)
@@ -6,6 +9,12 @@ plugins {
     kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -20,6 +29,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        buildConfigField(
+            "String",
+            "SUPABASE_URL",
+            "\"${localProperties.getProperty("SUPABASE_URL", "")}\""
+        )
+
+        buildConfigField(
+            "String",
+            "SUPABASE_KEY",
+            "\"${localProperties.getProperty("SUPABASE_KEY", "")}\""
+        )
     }
 
     buildTypes {
@@ -39,6 +61,7 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }
@@ -69,6 +92,12 @@ dependencies {
 
     //Hilt für Compose
     implementation(libs.androidx.hilt.navigation.compose)
+
+    //Supabase
+    implementation(platform(libs.bom))
+    implementation(libs.postgrest.kt)
+    //Ktor für Supabase
+    implementation(libs.ktor.client.android)
 
     // for room
     implementation(libs.androidx.room.runtime)

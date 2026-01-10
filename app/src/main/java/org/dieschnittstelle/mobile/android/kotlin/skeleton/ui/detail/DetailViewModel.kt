@@ -8,12 +8,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item.MediaItemRepository
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.MediaItemRepository
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetails
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItem
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItemDetails
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.DeleteDialogUiState
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.MediaItemDTO
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.toMediaItemDetails
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,16 +28,27 @@ class DetailViewModel @Inject constructor(
     var deleteDetailDialogUiState by mutableStateOf(DeleteDetailDialogUiState())
         private set
 
-    suspend fun getItemById(id: Long) {
-        mediaItemRepository.getMediaItemStream(id).collect { mediaItem ->
+    suspend fun getItemById(id: String) {
+        mediaItemRepository.getMediaItemStream(id.toLong()).collect { mediaItem ->
             _uiState.value = _uiState.value.copy(
                 mediaItem = mediaItem?.toMediaItemDetails() ?: MediaItemDetails()
             )
         }
     }
 
+    suspend fun getRemoteItem(id: String) {
+        val remoteMediaItem = mediaItemRepository.getRemoteItem(id)
+        _uiState.value = _uiState.value.copy(
+            mediaItem = remoteMediaItem.toMediaItemDetails()
+        )
+    }
+
     suspend fun deleteItem(item: MediaItemDetails) {
         mediaItemRepository.deleteItem(item.toMediaItem())
+    }
+
+    suspend fun deleteRemoteItem(item: MediaItemDTO) {
+        mediaItemRepository.removeRemoteItem(item)
     }
 
     fun changeDeleteDialogUiState(

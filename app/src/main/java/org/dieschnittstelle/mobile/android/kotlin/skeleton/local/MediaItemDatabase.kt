@@ -1,12 +1,10 @@
-package org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item
+package org.dieschnittstelle.mobile.android.kotlin.skeleton.local
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
 
-@Database(entities = [MediaItem::class], version = 4, exportSchema = false)
+@Database(entities = [MediaItem::class], version = 7, exportSchema = false)
 abstract class MediaItemDatabase : RoomDatabase() {
     abstract fun mediaItemDAO(): MediaItemDao
 }

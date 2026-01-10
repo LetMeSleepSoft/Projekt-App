@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetails
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.MediaItemDTO
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.detail.DetailScreen
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.ListScreen
 
@@ -17,7 +19,7 @@ enum class AppRoutes() {
 }
 
 @Serializable
-data class MediaDetailRoute(val mediaItemId: Long)
+data class MediaDetailRoute(val mediaItemId: String)
 
 @Composable
 fun AppNavHost(
@@ -31,9 +33,11 @@ fun AppNavHost(
     ) {
         composable(route = AppRoutes.List.name) {
             ListScreen(
-                onNavigateToDetails = { mediaItemId ->
+                onNavigateToDetails = { mediaItemId->
                     navController.navigate(
-                        MediaDetailRoute(mediaItemId = mediaItemId)
+                        MediaDetailRoute(
+                            mediaItemId = mediaItemId,
+                        )
                     )
                 }
             )
@@ -45,7 +49,7 @@ fun AppNavHost(
                 onNavigateBack = {
                     navController.navigate(AppRoutes.List.name)
                 },
-                mediaItemId = mediaItemRoute.mediaItemId
+                mediaItemId = mediaItemRoute.mediaItemId,
             )
         }
     }

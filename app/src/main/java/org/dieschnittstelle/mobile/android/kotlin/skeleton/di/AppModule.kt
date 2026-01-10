@@ -7,10 +7,13 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item.MediaItemDao
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item.MediaItemDatabase
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item.MediaItemRepository
-import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.item.MediaItemRepositoryImpl
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.MediaItemDao
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.MediaItemDatabase
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.MediaItemRepository
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.local.MediaItemRepositoryImpl
 import javax.inject.Singleton
 
 
@@ -38,7 +41,18 @@ internal object AppModule {
 
     @Provides
     @Singleton
-    fun provideMediaItemRepository(mediaItemDao: MediaItemDao): MediaItemRepository {
-        return MediaItemRepositoryImpl(localMediaItemDAO = mediaItemDao)
+    fun provideMediaItemRepository(mediaItemDao: MediaItemDao, supabase: SupabaseClient): MediaItemRepository {
+        return MediaItemRepositoryImpl(localMediaItemDAO = mediaItemDao, supabase = supabase)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSupabase(): SupabaseClient {
+        return createSupabaseClient(
+            supabaseUrl = "https://dznnqmoasspcrwnsnavj.supabase.co",
+            supabaseKey = "sb_publishable_k2Hu7ffidvvXmnC29sEEdA_cQYLYNfv"
+        ) {
+            install(Postgrest)
+        }
     }
 }

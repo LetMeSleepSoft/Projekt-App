@@ -2,6 +2,7 @@ package org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.detail
 
 import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetails
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toDto
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.MediaItemDTO
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.DeleteDialog
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.DeleteDialogUiState
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.MinimalDialogUiState
@@ -35,18 +38,25 @@ import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.MinimalDialog
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun DetailScreen(
-    mediaItemId: Long,
+    mediaItemId: String,
     onNavigateBack: () -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val deleteDialogUiState = viewModel.deleteDetailDialogUiState
 
+    var isRemote by remember { mutableStateOf(false) }
+
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(mediaItemId) {
-        viewModel.getItemById(mediaItemId)
+        if (mediaItemId.contains("-")) {
+            isRemote = true
+            viewModel.getRemoteItem(mediaItemId)
+        } else{
+            Log.i("DETAILS SCREEN ID", "ID: ${mediaItemId}")
+            viewModel.getItemById(mediaItemId)
+        }
     }
-
 
     Scaffold(
         topBar = {
@@ -54,7 +64,11 @@ fun DetailScreen(
                 mediaItemDetails = uiState.mediaItem,
                 onDelete = { item ->
                     coroutineScope.launch {
-                        viewModel.deleteItem(item)
+                        if (!isRemote) {
+                            viewModel.deleteItem(item)
+                        } else {
+                            viewModel.deleteRemoteItem(item.toDto())
+                        }
                     }
                 },
                 onChangeVisibility = viewModel::changeDeleteDialogUiState,
@@ -73,7 +87,11 @@ fun DetailScreen(
                 onDismiss = {},
                 onDelete = { item ->
                     coroutineScope.launch {
-                        viewModel.deleteItem(item)
+                        if (!isRemote) {
+                            viewModel.deleteItem(item)
+                        } else {
+                            viewModel.deleteRemoteItem(item.toDto())
+                        }
                     }
                 },
                 onNavigateBack = onNavigateBack

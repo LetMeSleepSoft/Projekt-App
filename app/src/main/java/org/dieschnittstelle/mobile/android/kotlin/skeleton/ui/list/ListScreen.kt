@@ -31,7 +31,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +41,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -71,6 +74,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.R
@@ -78,24 +82,110 @@ import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetails
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItem
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toMediaItemDetails
+import java.util.UUID
 
+enum class ListFilter {
+    ALL,
+    LOCAL,
+    REMOTE
+}
 
 @Composable
 fun ListScreen(
     modifier: Modifier = Modifier,
-    onNavigateToDetails: (Long) -> Unit,
+    onNavigateToDetails: (String) -> Unit,
     viewModel: MediaItemViewModel = hiltViewModel()
 ){
     val coroutineScope = rememberCoroutineScope()
-    val mediaItemListUiState by viewModel.mediaItemListUiState.collectAsState()
+    val mediaItemListUiState by viewModel.localMediaItemListUiState.collectAsState()
+    val remoteItemListUiState by viewModel.remoteItemListUiState.collectAsState()
+    val allMediaItemsUiState by viewModel.allMediaItemsUiState.collectAsState()
     val context: Context = LocalContext.current
+
+    var listFilter by remember { mutableStateOf(ListFilter.LOCAL) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar()
         },
-        floatingActionButton = {
+        bottomBar = {
+            BottomAppBar(
+                actions = {
+                    Button(
+                        onClick = { listFilter = ListFilter.LOCAL  },
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (listFilter.name == "LOCAL") {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(2.dp)
+                    ) {
+                        Text(
+                            text = "Lokal"
+                        )
+                    }
+                    Button(
+                        onClick = { listFilter = ListFilter.REMOTE },
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (listFilter.name == "REMOTE") {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(2.dp)
+                    ) {
+                        Text(
+                            text = "Remote"
+                        )
+                    }
+                    Button(
+                        onClick = { listFilter = ListFilter.ALL },
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (listFilter.name == "ALL") {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(
+                                start = 2.dp,
+                                top = 2.dp,
+                                bottom = 2.dp,
+                                end = 16.dp
+                            )
+                    ) {
+                        Text(
+                            text = "Alle"
+                        )
+                    }
+                },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = {
+                            viewModel.changeBottomSheetUiState(
+                                viewModel.bottomSheetUiState.isBottomSheetVisible
+                            )
+                        },
+                    ) {
+                        Icon(Icons.Filled.Add, "Localized description")
+                    }
+                }
+            )
+        },
+        /*floatingActionButton = {
             FloatingActionButton(
                 modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
                 onClick = {
@@ -106,7 +196,7 @@ fun ListScreen(
             ) {
                 Icon(Icons.Filled.Add, "Floating action Button")
             }
-        }
+        }*/
     ) { innerPadding ->
         ListScreenBody(
             bottomSheetUiState = viewModel.bottomSheetUiState,
@@ -115,6 +205,8 @@ fun ListScreen(
             onShowEditBottomSheet = viewModel::transferMediaItemToBottomUiState,
             onSheetItemValueChange = viewModel::updateBottomSheetUiState,
             mediaItems = mediaItemListUiState.mediaItems,
+            remoteItems = remoteItemListUiState.mediaItems,
+            allItems = allMediaItemsUiState.mediaItems,
             modifier = Modifier.padding(innerPadding),
             onSave = {
                 coroutineScope.launch {
@@ -141,7 +233,9 @@ fun ListScreen(
             deleteDialogUiState = viewModel.deleteDialogUiState,
             onShowMinimalDialog = viewModel::changeMinimalDialogUiState,
             onShowDeleteDialog = viewModel::changeDeleteDialogUiState,
-            onNavigateToDetails = onNavigateToDetails
+            onNavigateToDetails = onNavigateToDetails,
+            onChosenButton = viewModel::changeLocalRemoteButton,
+            listFilter = listFilter
         )
     }
 }
@@ -156,6 +250,8 @@ fun ListScreenBody(
     onShowEditBottomSheet: (MediaItemDetails) -> Unit,
     onSheetItemValueChange: (MediaItemDetails) -> Unit,
     mediaItems: List<MediaItem>,
+    remoteItems: List<MediaItem>,
+    allItems: List<MediaItem>,
     onSave: () -> Unit,
     onDelete: (MediaItem) -> Unit,
     onUpdate: (MediaItem) -> Unit,
@@ -163,28 +259,70 @@ fun ListScreenBody(
     onDismiss: (Boolean) -> Unit,
     onShowMinimalDialog: (Boolean, MediaItemDetails) -> Unit,
     onShowDeleteDialog: (Boolean, MediaItemDetails) -> Unit,
-    onNavigateToDetails: (Long) -> Unit,
+    onNavigateToDetails: (String) -> Unit,
+    onChosenButton:(Boolean) -> Unit,
     context: Context,
+    listFilter: ListFilter,
     modifier: Modifier = Modifier
 ) {
 
-    LazyColumn(
-        modifier = modifier
-    ) {
-        items(items = mediaItems) { item ->
-            ListItem(
-                mediaItem = item,
-                minimalDialogUiState = minimalDialogUiState,
-                onChangeMinimalDialogState = onShowMinimalDialog,
-                onNavigateToDetails = onNavigateToDetails
-            )
+    when (listFilter) {
+        ListFilter.REMOTE -> {
+            LazyColumn(
+                modifier = modifier
+            ) {
+                items(
+                    items = remoteItems,
+                    key = { it.remoteKey }
+                ) { item ->
+                    ListItem(
+                        mediaItem = item,
+                        minimalDialogUiState = minimalDialogUiState,
+                        onChangeMinimalDialogState = onShowMinimalDialog,
+                        onNavigateToDetails = onNavigateToDetails
+                    )
+                }
+            }
+        }
+        ListFilter.ALL -> {
+            LazyColumn(
+                modifier = modifier
+            ) {
+                items(
+                    items = allItems,
+                    key = { item -> item.id }
+                ) { item ->
+                    ListItem(
+                        mediaItem = item,
+                        minimalDialogUiState = minimalDialogUiState,
+                        onChangeMinimalDialogState = onShowMinimalDialog,
+                        onNavigateToDetails = onNavigateToDetails
+                    )
+                }
+            }
+        }
+        else -> {
+            LazyColumn(
+                modifier = modifier
+            ) {
+                items(
+                    items = mediaItems,
+                ) { item ->
+                    ListItem(
+                        mediaItem = item,
+                        minimalDialogUiState = minimalDialogUiState,
+                        onChangeMinimalDialogState = onShowMinimalDialog,
+                        onNavigateToDetails = onNavigateToDetails
+                    )
+                }
+            }
         }
     }
+
 
     if (bottomSheetUiState.isBottomSheetVisible) {
         BottomModal(
             bottomSheetUiState = bottomSheetUiState,
-            alertDialogUiState = alertDialogState,
             onShowBottomSheet = onShowBottomSheet,
             onSheetItemValueChange = onSheetItemValueChange,
             mediaItem = bottomSheetUiState.mediaItemDetails,
@@ -192,7 +330,8 @@ fun ListScreenBody(
             context = context,
             onImagePicked = onImagePicked,
             onDelete = onDelete,
-            onUpdate = onUpdate
+            onUpdate = onUpdate,
+            onChoseButton = onChosenButton,
         )
     }
 
@@ -234,16 +373,27 @@ fun ListItem(
     mediaItem: MediaItem,
     minimalDialogUiState: MinimalDialogUiState,
     onChangeMinimalDialogState: (Boolean, MediaItemDetails) -> Unit,
-    onNavigateToDetails: (Long) -> Unit,
+    onNavigateToDetails: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val stringFromUUID = mediaItem.remoteId.toString()
+
     Box {
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent
             ),
             onClick = {
-                onNavigateToDetails(mediaItem.id)
+                if (stringFromUUID == "00000000-0000-0000-0000-000000000000") {
+                    onNavigateToDetails(
+                        mediaItem.id.toString(),
+                    )
+                } else {
+                    onNavigateToDetails(
+                        mediaItem.remoteId.toString(),
+                    )
+                }
+
             },
             modifier = modifier.padding(2.dp)
         ) {
@@ -258,8 +408,14 @@ fun ListItem(
                 ListItemInformation(
                     mediaItem.title,
                     mediaItem.createDate.toString(),
+                    mediaItem.remoteId,
                     modifier = modifier.weight(1f)
                 )
+                if (stringFromUUID == "00000000-0000-0000-0000-000000000000") {
+                    Text(text = "Local")
+                } else {
+                    Text(text = "Remote")
+                }
                 IconButton(
                     onClick = {
                         onChangeMinimalDialogState(
@@ -282,6 +438,7 @@ fun ListItem(
 fun ListItemInformation(
     name: String,
     date: String,
+    remoteId: UUID,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -318,18 +475,20 @@ fun ListItemIcon(
 fun BottomModal(
     context: Context,
     bottomSheetUiState: BottomSheetUiState,
-    alertDialogUiState: AlertDialogUiState,
     onShowBottomSheet: (Boolean) -> Unit,
     onSheetItemValueChange: (MediaItemDetails) -> Unit,
     onSave: () -> Unit,
     onImagePicked: (Context, Uri) -> ByteArray?,
     onDelete: (MediaItem) -> Unit,
     onUpdate: (MediaItem) -> Unit,
+    onChoseButton: (Boolean) -> Unit,
     mediaItem: MediaItemDetails,
     modifier: Modifier = Modifier
 ) {
     val transferItem by remember { mutableStateOf(mediaItem) }
     val itemFlag = transferItem.title.isNotEmpty()
+
+    val buttonFlag by remember { mutableStateOf(true) }
 
     val sheetState = rememberModalBottomSheetState()
 
@@ -457,6 +616,49 @@ fun BottomModal(
                     )
                 }
             }
+
+            if (!itemFlag) {
+               Box(
+                   //modifier = modifier.background(color = Color.Gray)
+               ){
+                   Row() {
+                       Button(
+                           onClick = {
+                               onChoseButton(buttonFlag)
+                           },
+                           shape = RoundedCornerShape(4.dp),
+                           colors = if (bottomSheetUiState.isLocalButtonChosen)
+                               ButtonDefaults.buttonColors(Color.Blue) else
+                               ButtonDefaults.buttonColors(Color.Black),
+                           modifier = modifier
+                               .padding(2.dp)
+                               .weight(1f)
+                       ) {
+                           Text(
+                               text = "Lokal"
+                           )
+                       }
+                       Button(
+                           onClick = {
+                               onChoseButton(!buttonFlag)
+                           },
+                           shape = RoundedCornerShape(4.dp),
+                           colors = if (bottomSheetUiState.isLocalButtonChosen)
+                               ButtonDefaults.buttonColors(Color.Black) else
+                               ButtonDefaults.buttonColors(Color.Blue),
+                           modifier = modifier
+                               .padding(2.dp)
+                               .weight(1f)
+                       ) {
+                           Text(
+                               text = "Remote"
+                           )
+                       }
+                   }
+               }
+            }
+
+            HorizontalDivider(thickness = 2.dp)
 
             Row(
                 modifier = modifier.fillMaxWidth(),

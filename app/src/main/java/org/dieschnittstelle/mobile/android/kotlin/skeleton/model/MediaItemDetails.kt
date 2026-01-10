@@ -1,9 +1,12 @@
 package org.dieschnittstelle.mobile.android.kotlin.skeleton.model
 
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.MediaItemDTO
 import java.lang.System.currentTimeMillis
+import java.util.UUID
 
 data class MediaItemDetails(
     val id: Long = 0,
+    val remoteId: UUID = UUID(0L, 0L),
     val title: String = "",
     val src: ByteArray? = byteArrayOf(),
     val createDate: Long = currentTimeMillis()
@@ -33,6 +36,15 @@ data class MediaItemDetails(
 
 fun MediaItemDetails.toMediaItem(): MediaItem = MediaItem(
     id = id,
+    remoteId = remoteId,
+    title = title,
+    src = src,
+    createDate = createDate
+)
+
+fun MediaItemDetails.toDto(): MediaItemDTO = MediaItemDTO(
+    id = id.toString(),
+    remoteId = remoteId,
     title = title,
     src = src,
     createDate = createDate
