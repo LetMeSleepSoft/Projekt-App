@@ -216,7 +216,6 @@ fun MapLibreView(
     )
 }
 
-
 data class MarkerData(
     val position: LatLng,
     val title: String,

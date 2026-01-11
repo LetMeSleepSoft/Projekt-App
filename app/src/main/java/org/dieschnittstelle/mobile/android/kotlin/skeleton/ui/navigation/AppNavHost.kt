@@ -53,7 +53,7 @@ fun AppNavHost(
             val mediaItemRoute = backStackEntry.toRoute<MediaDetailRoute>()
             DetailScreen(
                 onNavigateBack = {
-                    navController.navigate(AppRoutes.List.name)
+                    navController.popBackStack()
                 },
                 mediaItemId = mediaItemRoute.mediaItemId,
             )
