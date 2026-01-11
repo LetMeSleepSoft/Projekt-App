@@ -56,6 +56,16 @@ fun AppNavHost(
                     navController.popBackStack()
                 },
                 mediaItemId = mediaItemRoute.mediaItemId,
+                onNavigateToList = {
+                    navController.navigate(
+                        route = AppRoutes.List.name
+                    )
+                },
+                onNavigateToMap = {
+                    navController.navigate(
+                        route = AppRoutes.Map.name
+                    )
+                }
             )
         }
 
