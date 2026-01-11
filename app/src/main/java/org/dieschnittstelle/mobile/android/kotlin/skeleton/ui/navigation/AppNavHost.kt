@@ -12,10 +12,11 @@ import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetail
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.MediaItemDTO
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.detail.DetailScreen
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.ListScreen
+import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.map.MapScreen
 
 enum class AppRoutes() {
     List,
-    Detail,
+    Map,
 }
 
 @Serializable
@@ -33,11 +34,16 @@ fun AppNavHost(
     ) {
         composable(route = AppRoutes.List.name) {
             ListScreen(
-                onNavigateToDetails = { mediaItemId->
+                onNavigateToDetails = { mediaItemId ->
                     navController.navigate(
                         MediaDetailRoute(
                             mediaItemId = mediaItemId,
                         )
+                    )
+                },
+                onNavigateToMap = {
+                    navController.navigate(
+                        route = AppRoutes.Map.name
                     )
                 }
             )
@@ -50,6 +56,23 @@ fun AppNavHost(
                     navController.navigate(AppRoutes.List.name)
                 },
                 mediaItemId = mediaItemRoute.mediaItemId,
+            )
+        }
+
+        composable(route = AppRoutes.Map.name) {
+            MapScreen(
+                onNavigateToList = {
+                    navController.navigate(
+                        route = AppRoutes.List.name
+                    )
+                },
+                onNavigateToDetails = { mediaItemId ->
+                    navController.navigate(
+                        MediaDetailRoute(
+                            mediaItemId = mediaItemId.toString(),
+                        )
+                    )
+                },
             )
         }
     }

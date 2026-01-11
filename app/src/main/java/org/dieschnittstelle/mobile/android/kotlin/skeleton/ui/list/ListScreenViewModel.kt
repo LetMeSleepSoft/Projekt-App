@@ -3,6 +3,7 @@ package org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -26,15 +27,14 @@ import androidx.core.graphics.scale
 import kotlinx.coroutines.flow.combine
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toDto
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.toEntity
+import java.io.ByteArrayInputStream
+import java.io.File
 import java.util.UUID
 
 @HiltViewModel
 class MediaItemViewModel @Inject constructor(
     private val mediaItemRepository: MediaItemRepository
 ) : ViewModel() {
-
-    var listState by mutableStateOf(ListState())
-        private set
 
     var alertDialogUiState by mutableStateOf(AlertDialogUiState())
         private set
@@ -47,31 +47,6 @@ class MediaItemViewModel @Inject constructor(
 
     var bottomSheetUiState by mutableStateOf(BottomSheetUiState())
         private set
-
-
-    fun changeListState(enum: ListFilter): ListFilter {
-       when(enum) {
-           ListFilter.REMOTE -> {
-               ListState(
-                   remoteButton = true
-               )
-               return ListFilter.REMOTE
-           }
-           ListFilter.ALL ->  {
-               ListState(
-                   allButton = true
-               )
-               return ListFilter.ALL
-           }
-           else -> {
-               ListState(
-                   localButton = true
-               )
-               return ListFilter.LOCAL
-           }
-       }
-    }
-
 
     val localMediaItemListUiState: StateFlow<LocalMediaItemListUiState> =
         mediaItemRepository.getAllMediaItemsStream().map { LocalMediaItemListUiState(it) }
@@ -278,9 +253,12 @@ class MediaItemViewModel @Inject constructor(
 
             val outputStream = ByteArrayOutputStream()
             scale.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-            val byteArray = outputStream.toByteArray()
+            var byteArray = outputStream.toByteArray()
 
             if(scale != bitmap) scale.recycle()
+
+            // GPS-Daten hinzufügen
+            byteArray = addFakeGpsToImage(byteArray)
 
             byteArray
         } catch (ex: Exception) {
@@ -288,13 +266,38 @@ class MediaItemViewModel @Inject constructor(
             null
         }
     }
-}
 
-data class ListState(
-    val localButton: Boolean = false,
-    val remoteButton: Boolean = false,
-    val allButton: Boolean = false
-)
+    private fun addFakeGpsToImage(imageBytes: ByteArray): ByteArray {
+        return try {
+            // Temporäre Datei erstellen
+            val tempFile = File.createTempFile("temp_image", ".jpg")
+            tempFile.writeBytes(imageBytes)
+
+            val exif = ExifInterface(tempFile.absolutePath)
+
+            // Zufällige GPS-Koordinaten in Deutschland hinzufügen
+            val randomLat = 48.0 + Math.random() * 7.0  // 48-55°N (Deutschland)
+            val randomLng = 6.0 + Math.random() * 9.0    // 6-15°E (Deutschland)
+
+            exif.setLatLong(randomLat, randomLng)
+
+            exif.setAttribute(ExifInterface.TAG_DATETIME,
+                java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss").format(java.util.Date()))
+
+            exif.saveAttributes()
+
+            val result = tempFile.readBytes()
+            tempFile.delete()
+
+            Log.i("EXIF_ADD", "Added GPS: $randomLat, $randomLng")
+
+            result
+        } catch (e: Exception) {
+            Log.e("EXIF_ADD", "Error adding GPS", e)
+            imageBytes
+        }
+    }
+}
 
 data class LocalMediaItemListUiState(
     val mediaItems: List<MediaItem> = emptyList(),

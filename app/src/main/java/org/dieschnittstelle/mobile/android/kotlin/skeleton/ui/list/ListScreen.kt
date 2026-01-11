@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -36,6 +37,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerDefaults
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -43,11 +47,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +84,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.R
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItem
@@ -94,6 +103,7 @@ enum class ListFilter {
 fun ListScreen(
     modifier: Modifier = Modifier,
     onNavigateToDetails: (String) -> Unit,
+    onNavigateToMap: () -> Unit,
     viewModel: MediaItemViewModel = hiltViewModel()
 ){
     val coroutineScope = rememberCoroutineScope()
@@ -102,141 +112,193 @@ fun ListScreen(
     val allMediaItemsUiState by viewModel.allMediaItemsUiState.collectAsState()
     val context: Context = LocalContext.current
 
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
     var listFilter by remember { mutableStateOf(ListFilter.LOCAL) }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar()
-        },
-        bottomBar = {
-            BottomAppBar(
-                actions = {
-                    Button(
-                        onClick = { listFilter = ListFilter.LOCAL  },
-                        shape = RoundedCornerShape(6.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (listFilter.name == "LOCAL") {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            }
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(2.dp)
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = false,
+        drawerContent = {
+            ModalDrawerSheet() {
+                Row(
+                ) {
+                    Box(
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "Lokal"
+                            text = "Navigation",
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
-                    Button(
-                        onClick = { listFilter = ListFilter.REMOTE },
-                        shape = RoundedCornerShape(6.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (listFilter.name == "REMOTE") {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            }
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(2.dp)
-                    ) {
-                        Text(
-                            text = "Remote"
-                        )
-                    }
-                    Button(
-                        onClick = { listFilter = ListFilter.ALL },
-                        shape = RoundedCornerShape(6.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (listFilter.name == "ALL") {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            }
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(
-                                start = 2.dp,
-                                top = 2.dp,
-                                bottom = 2.dp,
-                                end = 16.dp
+                    Box{
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                drawerState.close()
+                            } },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ArrowBack,
+                                contentDescription = ""
                             )
-                    ) {
-                        Text(
-                            text = "Alle"
-                        )
-                    }
-                },
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = {
-                            viewModel.changeBottomSheetUiState(
-                                viewModel.bottomSheetUiState.isBottomSheetVisible
-                            )
-                        },
-                    ) {
-                        Icon(Icons.Filled.Add, "Localized description")
+                        }
                     }
                 }
-            )
-        },
-        /*floatingActionButton = {
-            FloatingActionButton(
-                modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
-                onClick = {
-                    viewModel.changeBottomSheetUiState(
-                        viewModel.bottomSheetUiState.isBottomSheetVisible
-                    )
-                },
-            ) {
-                Icon(Icons.Filled.Add, "Floating action Button")
+                HorizontalDivider()
+                NavigationDrawerItem(
+                    label = {
+                        Text(
+                            text = "MediaItems",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    },
+                    selected = false,
+                    onClick = {  }
+                )
+                NavigationDrawerItem(
+                    label = {
+                        Text(
+                            text = "Map",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch {
+                            drawerState.close()
+                        }
+                        onNavigateToMap()
+                    }
+                )
             }
-        }*/
-    ) { innerPadding ->
-        ListScreenBody(
-            bottomSheetUiState = viewModel.bottomSheetUiState,
-            alertDialogState = viewModel.alertDialogUiState,
-            onShowBottomSheet = viewModel::changeBottomSheetUiState,
-            onShowEditBottomSheet = viewModel::transferMediaItemToBottomUiState,
-            onSheetItemValueChange = viewModel::updateBottomSheetUiState,
-            mediaItems = mediaItemListUiState.mediaItems,
-            remoteItems = remoteItemListUiState.mediaItems,
-            allItems = allMediaItemsUiState.mediaItems,
-            modifier = Modifier.padding(innerPadding),
-            onSave = {
-                coroutineScope.launch {
-                    viewModel.saveMediaItem()
-                    viewModel.changeBottomSheetUiState(
-                        viewModel.bottomSheetUiState.isBottomSheetVisible
-                    )
-                }
+        }
+    ) {
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    scope = coroutineScope,
+                    drawerstate = drawerState,
+                )
             },
-            onDelete = { item ->
-              coroutineScope.launch {
-                  viewModel.deleteItem(item)
-              }
+            bottomBar = {
+                BottomAppBar(
+                    actions = {
+                        Button(
+                            onClick = { listFilter = ListFilter.LOCAL  },
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (listFilter.name == "LOCAL") {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(2.dp)
+                        ) {
+                            Text(
+                                text = "Lokal"
+                            )
+                        }
+                        Button(
+                            onClick = { listFilter = ListFilter.REMOTE },
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (listFilter.name == "REMOTE") {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(2.dp)
+                        ) {
+                            Text(
+                                text = "Remote"
+                            )
+                        }
+                        Button(
+                            onClick = { listFilter = ListFilter.ALL },
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (listFilter.name == "ALL") {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(
+                                    start = 2.dp,
+                                    top = 2.dp,
+                                    bottom = 2.dp,
+                                    end = 16.dp
+                                )
+                        ) {
+                            Text(
+                                text = "Alle"
+                            )
+                        }
+                    },
+                    floatingActionButton = {
+                        FloatingActionButton(
+                            onClick = {
+                                viewModel.changeBottomSheetUiState(
+                                    viewModel.bottomSheetUiState.isBottomSheetVisible
+                                )
+                            },
+                        ) {
+                            Icon(Icons.Filled.Add, "Localized description")
+                        }
+                    }
+                )
             },
-            onUpdate = { item ->
-                coroutineScope.launch {
-                    viewModel.updateItem(item)
-                }
-            },
-            onImagePicked = viewModel::uriToByteArray,
-            context = context,
-            onDismiss = viewModel::changeAlertDialogUiState,
-            minimalDialogUiState = viewModel.minimalDialogUiState,
-            deleteDialogUiState = viewModel.deleteDialogUiState,
-            onShowMinimalDialog = viewModel::changeMinimalDialogUiState,
-            onShowDeleteDialog = viewModel::changeDeleteDialogUiState,
-            onNavigateToDetails = onNavigateToDetails,
-            onChosenButton = viewModel::changeLocalRemoteButton,
-            listFilter = listFilter
-        )
+        ) { innerPadding ->
+            ListScreenBody(
+                bottomSheetUiState = viewModel.bottomSheetUiState,
+                alertDialogState = viewModel.alertDialogUiState,
+                onShowBottomSheet = viewModel::changeBottomSheetUiState,
+                onShowEditBottomSheet = viewModel::transferMediaItemToBottomUiState,
+                onSheetItemValueChange = viewModel::updateBottomSheetUiState,
+                mediaItems = mediaItemListUiState.mediaItems,
+                remoteItems = remoteItemListUiState.mediaItems,
+                allItems = allMediaItemsUiState.mediaItems,
+                modifier = Modifier.padding(innerPadding),
+                onSave = {
+                    coroutineScope.launch {
+                        viewModel.saveMediaItem()
+                        viewModel.changeBottomSheetUiState(
+                            viewModel.bottomSheetUiState.isBottomSheetVisible
+                        )
+                    }
+                },
+                onDelete = { item ->
+                    coroutineScope.launch {
+                        viewModel.deleteItem(item)
+                    }
+                },
+                onUpdate = { item ->
+                    coroutineScope.launch {
+                        viewModel.updateItem(item)
+                    }
+                },
+                onImagePicked = viewModel::uriToByteArray,
+                context = context,
+                onDismiss = viewModel::changeAlertDialogUiState,
+                minimalDialogUiState = viewModel.minimalDialogUiState,
+                deleteDialogUiState = viewModel.deleteDialogUiState,
+                onShowMinimalDialog = viewModel::changeMinimalDialogUiState,
+                onShowDeleteDialog = viewModel::changeDeleteDialogUiState,
+                onNavigateToDetails = onNavigateToDetails,
+                onChosenButton = viewModel::changeLocalRemoteButton,
+                listFilter = listFilter
+            )
+        }
     }
 }
 
@@ -949,10 +1011,31 @@ fun DeleteDialog(
     }
 }
 
+@Composable
+fun NavDrawer(
+    drawerState: DrawerState
+) {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet() {
+                Text("Drawer title")
+                HorizontalDivider()
+                NavigationDrawerItem(
+                    label = { Text("ITEM")},
+                    selected = false,
+                    onClick = {}
+                )
+            }
+        }
+    ) { }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopAppBar(
-
+    scope: CoroutineScope,
+    drawerstate: DrawerState
 ) {
     TopAppBar(
         title = {
@@ -961,7 +1044,11 @@ fun TopAppBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = {}) {
+            IconButton(onClick = {
+                scope.launch {
+                    drawerstate.open()
+                }
+            }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.List,
                     contentDescription = ""

@@ -25,7 +25,6 @@ class MediaItemRepositoryImpl(
     override fun getAllMediaItemsStream(): Flow<List<MediaItem>> =
         localMediaItemDAO.getAllMediaItemsStream()
 
-
     override suspend fun getMediaItemStream(id: Long): Flow<MediaItem?> =
         localMediaItemDAO.getMediaItem(id)
 

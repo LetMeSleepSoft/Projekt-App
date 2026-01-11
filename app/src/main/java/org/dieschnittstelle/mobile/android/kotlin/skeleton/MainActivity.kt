@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.theme.MADDemoTheme
+import org.maplibre.android.MapLibre
+import org.maplibre.android.WellKnownTileServer
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -17,5 +19,10 @@ class MainActivity : ComponentActivity() {
                 ProjektApp()
             }
         }
+        MapLibre.getInstance(
+            this,
+            null, // Kein API-Key für Demo-Tiles
+            WellKnownTileServer.MapLibre
+        )
     }
 }
