@@ -3,6 +3,7 @@ package org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -271,7 +272,7 @@ fun ListScreen(
                 modifier = Modifier.padding(innerPadding),
                 onSave = {
                     coroutineScope.launch {
-                        viewModel.saveMediaItem()
+                        viewModel.saveMediaItem(it)
                         viewModel.changeBottomSheetUiState(
                             viewModel.bottomSheetUiState.isBottomSheetVisible
                         )
@@ -314,7 +315,7 @@ fun ListScreenBody(
     mediaItems: List<MediaItem>,
     remoteItems: List<MediaItem>,
     allItems: List<MediaItem>,
-    onSave: () -> Unit,
+    onSave: (String) -> Unit,
     onDelete: (MediaItem) -> Unit,
     onUpdate: (MediaItem) -> Unit,
     onImagePicked: (Context, Uri) -> ByteArray?,
@@ -539,7 +540,7 @@ fun BottomModal(
     bottomSheetUiState: BottomSheetUiState,
     onShowBottomSheet: (Boolean) -> Unit,
     onSheetItemValueChange: (MediaItemDetails) -> Unit,
-    onSave: () -> Unit,
+    onSave: (String) -> Unit,
     onImagePicked: (Context, Uri) -> ByteArray?,
     onDelete: (MediaItem) -> Unit,
     onUpdate: (MediaItem) -> Unit,
@@ -558,11 +559,25 @@ fun BottomModal(
     val keyboard = LocalSoftwareKeyboardController.current
 
     var imgResult by remember { mutableStateOf<ByteArray?>(null) }
+    var imageName by remember { mutableStateOf("") }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let {
             imgResult = onImagePicked(context, it)
+            val cursor = context.contentResolver.query(
+                uri,
+                null,
+                null,
+                null,
+                null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    imageName = it.getString(nameIndex)
+                }
+            }
         }
     }
 
@@ -612,7 +627,7 @@ fun BottomModal(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             onSheetItemValueChange(mediaItem.copy(src = imgResult))
-                            onSave()
+                            onSave(imageName)
                         }
                     ),
                 )
@@ -748,7 +763,7 @@ fun BottomModal(
                             .weight(1f),
                         onClick = {
                             onSheetItemValueChange(mediaItem.copy(src = imgResult))
-                            onSave()
+                            onSave(imageName)
                         }
                     ) {
                         Text(
@@ -1009,26 +1024,6 @@ fun DeleteDialog(
             }
         }
     }
-}
-
-@Composable
-fun NavDrawer(
-    drawerState: DrawerState
-) {
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet() {
-                Text("Drawer title")
-                HorizontalDivider()
-                NavigationDrawerItem(
-                    label = { Text("ITEM")},
-                    selected = false,
-                    onClick = {}
-                )
-            }
-        }
-    ) { }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

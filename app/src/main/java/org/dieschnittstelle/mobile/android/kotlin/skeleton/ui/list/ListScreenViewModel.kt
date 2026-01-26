@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -153,18 +154,20 @@ class MediaItemViewModel @Inject constructor(
 
 
     // CRUD FUNKTIONEN
-    fun saveMediaItem() {
+    fun saveMediaItem(fallBackName: String) {
         viewModelScope.launch {
             if (bottomSheetUiState.isLocalButtonChosen) {
                 if (validateInput()) {
-                    val mediaItem = checkTitle(bottomSheetUiState.mediaItemDetails).toMediaItem()
+                    val mediaItem =
+                        checkTitle(bottomSheetUiState.mediaItemDetails, fallBackName).toMediaItem()
                     mediaItemRepository.insertMediaItem(mediaItem)
                 } else {
                     alertDialogUiState = AlertDialogUiState( isDialogVisible = true )
                 }
             } else {
                 if (validateInput()) {
-                    val mediaItem = checkTitle(bottomSheetUiState.mediaItemDetails).toMediaItem()
+                    val mediaItem =
+                        checkTitle(bottomSheetUiState.mediaItemDetails, fallBackName).toMediaItem()
                     mediaItemRepository.sendRemoteItem(
                         mediaItem.copy(
                             remoteId = UUID.randomUUID()
@@ -213,10 +216,13 @@ class MediaItemViewModel @Inject constructor(
         }
     }
 
-    private fun checkTitle(mediaItem: MediaItemDetails = bottomSheetUiState.mediaItemDetails): MediaItemDetails {
+    private fun checkTitle(
+        mediaItem: MediaItemDetails = bottomSheetUiState.mediaItemDetails,
+        fallBackName: String,
+    ): MediaItemDetails {
         val item: MediaItemDetails = if (mediaItem.title.isBlank()) {
             MediaItemDetails(
-                title = mediaItem.createDate.toString(),
+                title = fallBackName.substringBefore("."),
                 remoteId = mediaItem.remoteId,
                 src = mediaItem.src,
                 createDate = mediaItem.createDate
