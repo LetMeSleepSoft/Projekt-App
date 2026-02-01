@@ -81,6 +81,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -129,7 +130,7 @@ fun ListScreen(
                     ) {
                         Text(
                             text = "Navigation",
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(16.dp),
                         )
                     }
                     Box{
@@ -509,6 +510,7 @@ fun ListItemInformation(
     ) {
         Text(
             text = name,
+            fontSize = 20.sp
         )
         Text(
             text = date
@@ -574,7 +576,7 @@ fun BottomModal(
             )
             cursor?.use {
                 if (it.moveToFirst()) {
-                    val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    val nameIndex = it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)
                     imageName = it.getString(nameIndex)
                 }
             }
@@ -705,8 +707,8 @@ fun BottomModal(
                            },
                            shape = RoundedCornerShape(4.dp),
                            colors = if (bottomSheetUiState.isLocalButtonChosen)
-                               ButtonDefaults.buttonColors(Color.Blue) else
-                               ButtonDefaults.buttonColors(Color.Black),
+                               ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary) else
+                               ButtonDefaults.buttonColors(MaterialTheme.colorScheme.surface),
                            modifier = modifier
                                .padding(2.dp)
                                .weight(1f)
@@ -721,8 +723,8 @@ fun BottomModal(
                            },
                            shape = RoundedCornerShape(4.dp),
                            colors = if (bottomSheetUiState.isLocalButtonChosen)
-                               ButtonDefaults.buttonColors(Color.Black) else
-                               ButtonDefaults.buttonColors(Color.Blue),
+                               ButtonDefaults.buttonColors(MaterialTheme.colorScheme.surface) else
+                               ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
                            modifier = modifier
                                .padding(2.dp)
                                .weight(1f)

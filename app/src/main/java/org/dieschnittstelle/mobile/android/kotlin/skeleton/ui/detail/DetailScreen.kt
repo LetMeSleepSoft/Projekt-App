@@ -169,6 +169,7 @@ fun DetailScreen(
                 modifier = Modifier.padding(innerPadding),
                 onNavigateBack = onNavigateBack,
                 extractGps = viewModel::extractGpsFromImage,
+                isRemote = isRemote,
             )
 
             if (deleteDialogUiState.isVisible) {
@@ -197,7 +198,8 @@ fun DetailBody(
     mediaItem: MediaItemDetails,
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit,
-    extractGps: (ByteArray) -> GpsCoordinates?
+    extractGps: (ByteArray) -> GpsCoordinates?,
+    isRemote: Boolean
 ) {
     val bitmap = BitmapFactory.decodeByteArray(
         mediaItem.src,
@@ -245,15 +247,17 @@ fun DetailBody(
                 contentDescription = ""
             )
         }
-        Box(
-           modifier = modifier.weight(0.5f)
-        ) {
-            MapLibreView(
-                styleUrl = "https://tiles.openfreemap.org/styles/liberty",
-                markers = listTest as List<MarkerData>,
-                initialPosition = listTest.firstOrNull()?.position
-                    ?: LatLng(52.520008, 13.404954)
-            )
+        if(!isRemote) {
+            Box(
+                modifier = modifier.weight(0.5f)
+            ) {
+                MapLibreView(
+                    styleUrl = "https://tiles.openfreemap.org/styles/liberty",
+                    markers = listTest as List<MarkerData>,
+                    initialPosition = listTest.firstOrNull()?.position
+                        ?: LatLng(52.520008, 13.404954)
+                )
+            }
         }
     }
 }

@@ -67,8 +67,6 @@ class MediaItemViewModel @Inject constructor(
             val entity = dto.toEntity().copy(
                 id = maxLocalId + index + 1
             )
-
-            // Debug: Prüfe gemappte Entity
             Log.d("MappedEntity", "id=${entity.id}, remoteId='${entity.remoteId}', title='${entity.title}'")
 
             entity

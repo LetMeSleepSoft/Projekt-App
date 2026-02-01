@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         }
         MapLibre.getInstance(
             this,
-            null, // Kein API-Key für Demo-Tiles
+            null,
             WellKnownTileServer.MapLibre
         )
     }
