@@ -158,7 +158,6 @@ fun MapLibreView(
     val mapView = remember { MapView(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    // ✅ Track ob die View noch aktiv ist
     var isActive by remember { mutableStateOf(true) }
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
 
@@ -178,7 +177,7 @@ fun MapLibreView(
                     mapView.onStop()
                 }
                 Lifecycle.Event.ON_DESTROY -> {
-                    isActive = false  // ✅ Markiere als inaktiv
+                    isActive = false
                     mapInstance = null
                     try {
                         mapView.onDestroy()
@@ -192,7 +191,7 @@ fun MapLibreView(
         lifecycle.addObserver(observer)
 
         onDispose {
-            isActive = false  // ✅ Wichtig!
+            isActive = false
             mapInstance = null
             lifecycle.removeObserver(observer)
             try {
@@ -207,14 +206,12 @@ fun MapLibreView(
         factory = { mapView },
         modifier = modifier,
         update = { view ->
-            // ✅ Nur updaten wenn noch aktiv
             if (!isActive) {
                 Log.d("MapLibre", "View nicht mehr aktiv - skip update")
                 return@AndroidView
             }
 
             view.getMapAsync { map ->
-                // ✅ Check nach async callback
                 if (!isActive) {
                     Log.d("MapLibre", "View destroyed während getMapAsync")
                     return@getMapAsync
@@ -224,13 +221,11 @@ fun MapLibreView(
 
                 try {
                     map.setStyle(styleUrl) { style ->
-                        // ✅ Check nach async style load
                         if (!isActive) {
                             Log.d("MapLibre", "View destroyed während setStyle")
                             return@setStyle
                         }
 
-                        // ✅ Nochmal checken ob map noch existiert
                         if (mapInstance == null) {
                             Log.d("MapLibre", "Map instance null")
                             return@setStyle
