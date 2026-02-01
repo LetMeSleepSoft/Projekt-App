@@ -1,5 +1,6 @@
 package org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.map
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,8 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +40,7 @@ import org.dieschnittstelle.mobile.android.kotlin.skeleton.ui.list.TopAppBar
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 
 // "https://tiles.openfreemap.org/styles/liberty"
@@ -149,29 +153,53 @@ fun MapLibreView(
     initialPosition: LatLng = LatLng(52.520008, 13.404954),
     initialZoom: Double = 10.0,
     onMarkerClick: (Long) -> Unit = {}
-    
 ) {
     val context = LocalContext.current
     val mapView = remember { MapView(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
+    // ✅ Track ob die View noch aktiv ist
+    var isActive by remember { mutableStateOf(true) }
+    var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
+
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_CREATE -> mapView.onCreate(null)
+                Lifecycle.Event.ON_CREATE -> {
+                    isActive = true
+                    mapView.onCreate(null)
+                }
                 Lifecycle.Event.ON_START -> mapView.onStart()
                 Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                Lifecycle.Event.ON_STOP -> mapView.onStop()
-                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+                Lifecycle.Event.ON_PAUSE -> {
+                    mapView.onPause()
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    mapView.onStop()
+                }
+                Lifecycle.Event.ON_DESTROY -> {
+                    isActive = false  // ✅ Markiere als inaktiv
+                    mapInstance = null
+                    try {
+                        mapView.onDestroy()
+                    } catch (e: Exception) {
+                        Log.e("MapLibre", "Error on destroy", e)
+                    }
+                }
                 else -> {}
             }
         }
         lifecycle.addObserver(observer)
 
         onDispose {
+            isActive = false  // ✅ Wichtig!
+            mapInstance = null
             lifecycle.removeObserver(observer)
-            mapView.onDestroy()
+            try {
+                mapView.onDestroy()
+            } catch (e: Exception) {
+                Log.e("MapLibre", "Error on dispose", e)
+            }
         }
     }
 
@@ -179,37 +207,74 @@ fun MapLibreView(
         factory = { mapView },
         modifier = modifier,
         update = { view ->
+            // ✅ Nur updaten wenn noch aktiv
+            if (!isActive) {
+                Log.d("MapLibre", "View nicht mehr aktiv - skip update")
+                return@AndroidView
+            }
+
             view.getMapAsync { map ->
-                map.setStyle(styleUrl) {
-                    map.clear()
+                // ✅ Check nach async callback
+                if (!isActive) {
+                    Log.d("MapLibre", "View destroyed während getMapAsync")
+                    return@getMapAsync
+                }
 
-                    // Marker mit Zuordnung speichern
-                    val markerMap = mutableMapOf<org.maplibre.android.annotations.Marker, MarkerData>()
+                mapInstance = map
 
-                    markers.forEach { markerData ->
-                        val marker = map.addMarker(
-                            MarkerOptions()
-                                .position(markerData.position)
-                                .title(markerData.title)
-                                .snippet("Klicken für Details")
-                        )
-                        markerMap[marker] = markerData
-                    }
-
-                    // Info-Fenster Click
-                    map.setOnInfoWindowClickListener { clickedMarker ->
-                        clickedMarker.let { marker ->
-                            markerMap[marker]?.let { markerData ->
-                                onMarkerClick(markerData.id)
-                            }
+                try {
+                    map.setStyle(styleUrl) { style ->
+                        // ✅ Check nach async style load
+                        if (!isActive) {
+                            Log.d("MapLibre", "View destroyed während setStyle")
+                            return@setStyle
                         }
-                        true
-                    }
 
-                    map.cameraPosition = CameraPosition.Builder()
-                        .target(initialPosition)
-                        .zoom(initialZoom)
-                        .build()
+                        // ✅ Nochmal checken ob map noch existiert
+                        if (mapInstance == null) {
+                            Log.d("MapLibre", "Map instance null")
+                            return@setStyle
+                        }
+
+                        try {
+                            map.clear()
+
+                            val markerMap = mutableMapOf<org.maplibre.android.annotations.Marker, MarkerData>()
+
+                            markers.forEach { markerData ->
+                                if (!isActive) return@setStyle  // ✅ Check in Loop
+
+                                val marker = map.addMarker(
+                                    MarkerOptions()
+                                        .position(markerData.position)
+                                        .title(markerData.title)
+                                        .snippet("Klicken für Details")
+                                )
+                                markerMap[marker] = markerData
+                            }
+
+                            map.setOnInfoWindowClickListener { clickedMarker ->
+                                if (!isActive) return@setOnInfoWindowClickListener false
+
+                                clickedMarker.let { marker ->
+                                    markerMap[marker]?.let { markerData ->
+                                        onMarkerClick(markerData.id)
+                                    }
+                                }
+                                true
+                            }
+
+                            map.cameraPosition = CameraPosition.Builder()
+                                .target(initialPosition)
+                                .zoom(initialZoom)
+                                .build()
+
+                        } catch (e: Exception) {
+                            Log.e("MapLibre", "Error setting up map", e)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("MapLibre", "Error loading style", e)
                 }
             }
         }

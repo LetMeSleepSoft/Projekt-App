@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,7 +42,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.MediaItemDetails
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.model.toDto
 import org.dieschnittstelle.mobile.android.kotlin.skeleton.remote.MediaItemDTO
@@ -65,12 +70,12 @@ fun DetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val deleteDialogUiState = viewModel.deleteDetailDialogUiState
-
     var isRemote by remember { mutableStateOf(false) }
-
     val coroutineScope = rememberCoroutineScope()
-
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    var isDeleting by remember { mutableStateOf(false) }
 
     LaunchedEffect(mediaItemId) {
         if (mediaItemId.contains("-")) {
@@ -149,9 +154,11 @@ fun DetailScreen(
                 DetailsTopAppBar(
                     mediaItemDetails = uiState.mediaItem,
                     onDelete = { item ->
+                        isDeleting = true
                         coroutineScope.launch {
                             if (!isRemote) {
                                 viewModel.deleteItem(item)
+
                             } else {
                                 viewModel.deleteRemoteItem(item.toDto())
                             }
@@ -162,6 +169,22 @@ fun DetailScreen(
                     scope = coroutineScope,
                     drawerState = drawerState,
                 )
+            },
+            bottomBar = {
+                BottomAppBar(
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                onNavigateBack()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = ""
+                            )
+                        }
+                    }
+                )
             }
         ) { innerPadding ->
             DetailBody(
@@ -170,6 +193,7 @@ fun DetailScreen(
                 onNavigateBack = onNavigateBack,
                 extractGps = viewModel::extractGpsFromImage,
                 isRemote = isRemote,
+                isDeleting = isDeleting
             )
 
             if (deleteDialogUiState.isVisible) {
@@ -185,7 +209,8 @@ fun DetailScreen(
                             }
                         }
                     },
-                    onNavigateBack = onNavigateBack
+                    onNavigateBack = onNavigateBack,
+                    scope = scope,
                 )
             }
         }
@@ -199,7 +224,8 @@ fun DetailBody(
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit,
     extractGps: (ByteArray) -> GpsCoordinates?,
-    isRemote: Boolean
+    isRemote: Boolean,
+    isDeleting: Boolean,
 ) {
     val bitmap = BitmapFactory.decodeByteArray(
         mediaItem.src,
@@ -237,19 +263,10 @@ fun DetailBody(
                 Text("FEHLER")
             }
         }
-        IconButton(
-            onClick = {
-                onNavigateBack()
-            }
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = ""
-            )
-        }
-        if(!isRemote) {
+
+        if(!isRemote && !isDeleting) {
             Box(
-                modifier = modifier.weight(0.5f)
+                modifier = modifier.weight(1f)
             ) {
                 MapLibreView(
                     styleUrl = "https://tiles.openfreemap.org/styles/liberty",
@@ -311,7 +328,8 @@ fun SimpleDeleteDialog(
     onDismiss: () -> Unit,
     onDelete: (MediaItemDetails) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scope: CoroutineScope,
 ) {
     var isVisible by remember { mutableStateOf(true) }
 
@@ -326,8 +344,11 @@ fun SimpleDeleteDialog(
             },
             onDismissMinimalDialog = { _, _ -> },
             onDelete = {
-                onDelete(mediaItem)
                 onNavigateBack()
+
+                scope.launch(Dispatchers.IO) {
+                    onDelete(mediaItem)
+                }
             },
             modifier = modifier
         )
