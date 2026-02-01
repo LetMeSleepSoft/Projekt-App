@@ -50,6 +50,7 @@ fun MapScreen(
     onNavigateToDetails: (Long) -> Unit,
     viewModel: MapViewModel = hiltViewModel()
 ) {
+    val mapFlag by remember { mutableStateOf(true) }
 
     val coroutineScope = rememberCoroutineScope()
     val markers by viewModel.markers.collectAsState()
@@ -120,6 +121,7 @@ fun MapScreen(
                 TopAppBar(
                     scope = coroutineScope,
                     drawerstate = drawerState,
+                    mapFlag = mapFlag
                 )
             }
         ) { innerPadding ->

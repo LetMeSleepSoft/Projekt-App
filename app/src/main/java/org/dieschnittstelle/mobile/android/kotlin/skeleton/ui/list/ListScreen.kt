@@ -108,6 +108,8 @@ fun ListScreen(
     onNavigateToMap: () -> Unit,
     viewModel: MediaItemViewModel = hiltViewModel()
 ){
+    val mapFlag by remember { mutableStateOf(false) }
+
     val coroutineScope = rememberCoroutineScope()
     val mediaItemListUiState by viewModel.localMediaItemListUiState.collectAsState()
     val remoteItemListUiState by viewModel.remoteItemListUiState.collectAsState()
@@ -182,6 +184,7 @@ fun ListScreen(
                 TopAppBar(
                     scope = coroutineScope,
                     drawerstate = drawerState,
+                    mapFlag = mapFlag,
                 )
             },
             bottomBar = {
@@ -1032,12 +1035,13 @@ fun DeleteDialog(
 @Composable
 fun TopAppBar(
     scope: CoroutineScope,
-    drawerstate: DrawerState
+    drawerstate: DrawerState,
+    mapFlag: Boolean,
 ) {
     TopAppBar(
         title = {
             Text(
-                text = stringResource(R.string.TopBarTitle)
+                text = if (!mapFlag) stringResource(R.string.TopBarTitle) else "Karte"
             )
         },
         navigationIcon = {
@@ -1052,13 +1056,5 @@ fun TopAppBar(
                 )
             }
         },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = ""
-                )
-            }
-        }
     )
 }
